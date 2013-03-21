@@ -34,4 +34,5 @@ agents:
     # Define one or more agents for each varnish instance
     -
       name: "Local Varnish"
-      n_arg:
+      # -n argument for Varnish
+      vname:
