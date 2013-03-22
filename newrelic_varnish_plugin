@@ -32,7 +32,9 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+require "bundler/setup"
 require 'json'
+require "newrelic_plugin"
 
 module VarnishAgent
   def VarnishAgent.varnishstat(vname = nil)
@@ -43,42 +45,76 @@ module VarnishAgent
     JSON.parse(IO::popen(cmd, mode="r").read())
   end
 
-  class Agent < Component::Agent::Base
-    agent_ident "com.varnish-software.stat"
-    agent_human_labels("Varnish") { "#{@vname}"}
-    agent_config :vname
-    @metrics = {}
-    def auto_setup opts
+  class Agent < NewRelic::Plugin::Agent::Base
+    agent_guid "com.varnish-software.newrelic-stat"
+    agent_version '0.0.2'
+    agent_human_labels("Varnish") { "varnish[#{@vname||"default"}]"}
+    agent_config_options :vname
+
+#    metric_human_label { "Varnish[#{agent.instance_label}]: #{config[:description]}" }
+
+    def unit(name)
+      case name.to_s
+        when /^client_(conn|drop)/
+        "connections"
+        when /^client_(req|hit|miss)/
+        "requests"
+        when /^backend_/
+        "connections"
+        when /^fetch_/
+        "fetch"
+        when /^n_(obj|expired|lru)/
+        "objects"
+        when /^n_wrk/
+        "threads"
+        when /^n_backend/
+        "backends"
+        when /^n_/
+        "structs"
+        when /^s_sess/
+        "sessions"
+        when /^s_(req|pipe|pass|fetch)/
+        "requests"
+        when /^s_(hdr|body)byes/
+        "bytes"
+        when /^sess/
+        "sessions"
+        else
+        "units"
+        end
+    end
+
+    def poll_cycle
       VarnishAgent.varnishstat(@vname).each do |name,stat|
+#        puts name
         if name == "timestamp"
           next
         end
         if stat["flag"] == "a"
-          type = :counter
+          report_counter_metric stat["description"], unit(name) + "/sec", stat["value"]
         else
-          type = :gauge
+          report_metric stat["description"], unit(name), stat["value"].to_i
         end
-        create_metric name, type: type, agent: {description: stat["description"] }
       end
+    rescue => e
+      $stderr.puts "#{e}: #{e.backtrace.join("\n  ")}"
+    end
+
+    def report_counter_metric(metric, type, value)
+      @processors ||= {}
+
+      if @processors[metric].nil?
+        @processors[metric] = NewRelic::Processor::EpochCounter.new
+      end
+
+      report_metric metric, type, @processors[metric].process(value)
     end
   end
 
-  class Metric < Component::Metric::Base
-    metric_human_label { "Varnish[#{agent.instance_label}]: #{config[:description]}" }
-  end
-
-  class PollCycle < Component::PollCycle::Base
-    def varnishstat
-      @stats ||= VarnishAgent.varnishstat(agent.vname)
-    end
-
-    def gather_metric(metric)
-      varnishstat[metric.config[:ident]].to_i
-    end
-  end
+  NewRelic::Plugin::Setup.install_agent :varnish,VarnishAgent
 
   #
-  # Register this agent
+  # Launch the agent (never returns)
   #
-  Component::Setup.install_agent :varnish,VarnishAgent
+  NewRelic::Plugin::Run.setup_and_run
 end
