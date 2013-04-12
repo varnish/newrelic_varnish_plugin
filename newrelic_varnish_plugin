@@ -42,7 +42,11 @@ module VarnishAgent
     if not vname.nil?
       cmd.push("-n", vname.to_s)
     end
-    JSON.parse(IO::popen(cmd, mode="r").read())
+    r = ""
+    IO::popen(cmd, mode="r") do |io|
+      r += io.read()
+    end
+    JSON.parse(r)
   end
 
   class Agent < NewRelic::Plugin::Agent::Base
