@@ -37,6 +37,37 @@ require 'json'
 require "newrelic_plugin"
 
 module VarnishAgent
+  def VarnishAgent.groups()
+    return {
+      'Request rates' => {
+        'metrics' => %w(cache_hit cache_hitpass cache_miss backend_conn backend_unhealthy client_req client_conn)
+      },
+      'Hit rates' => {
+        'metrics' => %w(client_req cache_hit cache_miss cache_hitpass)
+      },
+      'Backend Traffic' => {
+        'metrics' => %w(backend_conn backend_unhealthy backend_busy backend_fail backend_reuse backend_recycle backend_unused backend_req)
+      },
+      'Number of objects' => {
+        'metrics' => %w(n_object n_objcore n_objhead)
+      },
+      'Transfer rates' => {
+        'metrics' => %w(s_bodybytes s_hdrbytes)
+      },
+      'Thread status' => {
+        'metrics' => %w(n_wrk n_wrk_create n_wrk_failed n_wrk_max n_wrk_overflow n_wrk_drop)
+      },
+      'Memory usage' => {
+        'metrics' => %w(sm_balloc sma_nbytes sms_nbytes),
+        'regex_metrics' => ['^SM[AF]\.[^.]\.g_(bytes|space)' ]
+      },
+      'Misbehaviour' => {
+        'metrics' => %w(client_drop backend_unhealthy fetch_failed backend_busy n_wrk_failed n_wrk_max n_wrk_drop n_wrk_lqueue losthdr n_objoverflow esi_errors esi_warnings client_drop_late accept_fail),
+        'regex_metrics' => ['^SM[AF]\.[^.]\.c_fail' ]
+      },
+    }
+  end
+
   def VarnishAgent.varnishstat(vname = nil)
     cmd = [ "varnishstat", "-1", "-j" ]
     if not vname.nil?
@@ -51,7 +82,7 @@ module VarnishAgent
 
   class Agent < NewRelic::Plugin::Agent::Base
     agent_guid "com.varnish-software.newrelic-stat"
-    agent_version '0.0.3'
+    agent_version '0.0.4'
     agent_human_labels("Varnish") { "varnish[#{@vname||"default"}]"}
     agent_config_options :vname
 
@@ -62,6 +93,8 @@ module VarnishAgent
         when /^client_(conn|drop)/
         "connections"
         when /^client_(req|hit|miss)/
+        "requests"
+        when /^cache_(hit|miss)/
         "requests"
         when /^backend_/
         "connections"
@@ -79,25 +112,38 @@ module VarnishAgent
         "sessions"
         when /^s_(req|pipe|pass|fetch)/
         "requests"
-        when /^s_(hdr|body)byes/
+        when /bytes$/
         "bytes"
         when /^sess/
         "sessions"
+        when /^losthdr/
+        "requests"
+        when /^esi_errors/
+        "errors"
+        when /^esi_warnings/
+        "warnings"
+        when /^accept_fail/
+        "accepts"
         else
-        "units"
+        raise "Unknown unit: #{name}"
         end
     end
 
     def poll_cycle
-      VarnishAgent.varnishstat(@vname).each do |name,stat|
-#        puts name
-        if name == "timestamp"
-          next
-        end
-        if stat["flag"] == "a"
-          report_counter_metric stat["description"], unit(name) + "/sec", stat["value"]
-        else
-          report_metric stat["description"], unit(name), stat["value"].to_i
+      stats = VarnishAgent.varnishstat(@vname)
+      VarnishAgent.groups.each do |gname, group|
+        group["metrics"].each do |metric|
+          stat = stats[metric]
+          if stat.nil?
+            next
+          end
+          desc_name = "#{gname}/#{stat["description"]}"
+          puts desc_name
+          if stat["flag"] == "a"
+            report_counter_metric desc_name, unit(metric) + "/sec", stat["value"]
+          else
+            report_metric stat["description"], unit(metric), stat["value"].to_i
+          end
         end
       end
     rescue => e
