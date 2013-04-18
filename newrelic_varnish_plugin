@@ -137,16 +137,29 @@ module VarnishAgent
           if stat.nil?
             next
           end
-          desc_name = "#{gname}/#{stat["description"]}"
-          if stat["flag"] == "a"
-            report_counter_metric desc_name, unit(metric) + "/sec", stat["value"]
-          else
-            report_metric desc_name, unit(metric), stat["value"].to_i
+          report(metric, "#{gname}/#{stat["description"]}", stat)
+        end
+
+        if group.include?("regex_metrics")
+          group["regex_metrics"].each do |regex|
+            stats.each do |sname, stat|
+              if regex.match(sname)
+                report(sname, "#{gname}/#{$1} #{stat["description"]}", stat)
+              end
+            end
           end
         end
       end
     rescue => e
       $stderr.puts "#{e}: #{e.backtrace.join("\n  ")}"
+    end
+
+    def report(name, description, stat)
+      if stat["flag"] == "a"
+        report_counter_metric description, unit(name) + "/sec", stat["value"].to_i
+      else
+        report_metric description, unit(name), stat["value"].to_i
+      end
     end
 
     def report_counter_metric(metric, type, value)
