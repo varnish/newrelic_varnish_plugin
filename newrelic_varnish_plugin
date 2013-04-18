@@ -59,11 +59,11 @@ module VarnishAgent
       },
       'Memory usage' => {
         'metrics' => %w(sm_balloc sma_nbytes sms_nbytes),
-        'regex_metrics' => ['^SM[AF]\.[^.]\.g_(bytes|space)' ]
+        'regex_metrics' => [ /^(SM[AF]\.[^.]+)\.g_(bytes|space)/ ]
       },
       'Misbehaviour' => {
         'metrics' => %w(client_drop backend_unhealthy fetch_failed backend_busy n_wrk_failed n_wrk_max n_wrk_drop n_wrk_lqueue losthdr n_objoverflow esi_errors esi_warnings client_drop_late accept_fail),
-        'regex_metrics' => ['^SM[AF]\.[^.]\.c_fail' ]
+        'regex_metrics' => [/^(SM[AF]\.[^.]+)\.c_fail/ ]
       },
     }
   end
