@@ -141,7 +141,7 @@ module VarnishAgent
           if stat["flag"] == "a"
             report_counter_metric desc_name, unit(metric) + "/sec", stat["value"]
           else
-            report_metric stat["description"], unit(metric), stat["value"].to_i
+            report_metric desc_name, unit(metric), stat["value"].to_i
           end
         end
       end
