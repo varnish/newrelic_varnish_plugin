@@ -114,6 +114,8 @@ module VarnishAgent
         "requests"
         when /bytes$/
         "bytes"
+        when /g_space$/
+        "bytes"
         when /^sess/
         "sessions"
         when /^losthdr/
@@ -124,6 +126,8 @@ module VarnishAgent
         "warnings"
         when /^accept_fail/
         "accepts"
+        when /c_fail$/
+        "allocations"
         else
         raise "Unknown unit: #{name}"
         end
