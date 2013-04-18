@@ -138,7 +138,6 @@ module VarnishAgent
             next
           end
           desc_name = "#{gname}/#{stat["description"]}"
-          puts desc_name
           if stat["flag"] == "a"
             report_counter_metric desc_name, unit(metric) + "/sec", stat["value"]
           else
