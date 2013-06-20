@@ -33,7 +33,7 @@
 # SUCH DAMAGE.
 
 require "bundler/setup"
-require 'json'
+require 'rexml/document'
 require "newrelic_plugin"
 
 module VarnishAgent
@@ -69,21 +69,27 @@ module VarnishAgent
   end
 
   def VarnishAgent.varnishstat(vname = nil)
-    cmd = [ "varnishstat", "-1", "-j" ]
+    cmd = [ "varnishstat", "-1", "-x" ]
     if not vname.nil?
       cmd.push("-n", vname.to_s)
     end
     r = ""
-    IO::popen(cmd, mode="r") do |io|
+    IO::popen(cmd.join(' '), mode="r") do |io|
       r += io.read()
     end
-    JSON.parse(r)
+    doc = REXML::Document.new(r)
+    r = {}
+    doc.elements.each('varnishstat/stat') do |i|
+        name, others = i.elements.partition{|e| e.name == 'name'}
+        r[name.first.text] = Hash[others.map{|e| [e.name, e.text]}]
+    end
+    return r
   end
 
   class Agent < NewRelic::Plugin::Agent::Base
     agent_guid "com.varnish-software.newrelic-stat"
     agent_version '0.0.4'
-    agent_human_labels("Varnish") { "varnish[#{@vname||"default"}]"}
+    agent_human_labels("Varnish") { "#{@name||"varnish"}[#{@vname||"default"}]"}
     agent_config_options :vname
 
 #    metric_human_label { "Varnish[#{agent.instance_label}]: #{config[:description]}" }
