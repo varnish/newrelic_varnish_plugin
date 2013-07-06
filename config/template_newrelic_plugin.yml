@@ -33,6 +33,8 @@ agents:
   varnish:
     # Define one or more agents for each varnish instance
     -
-      name: "Local Varnish"
+      name: "Varnish 1"
       # -n argument for Varnish
-      vname:
+      # vname:
+      # host if you want to connect to a remote varnish
+      # host: user@hostname

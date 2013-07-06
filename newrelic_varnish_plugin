@@ -69,8 +69,12 @@ module VarnishAgent
     }
   end
 
-  def VarnishAgent.varnishstat(vname = nil)
-    cmd = [ "varnishstat", "-1", "-x" ]
+  def VarnishAgent.varnishstat(host = nil, vname = nil)
+    cmd = [ ]
+    if not host.nil?
+      cmd.push("ssh", "-t", "#{host}" )
+    end
+    cmd.push("varnishstat", "-1", "-x")
     if not vname.nil?
       cmd.push("-n", vname.to_s)
     end
@@ -92,6 +96,7 @@ module VarnishAgent
     agent_version '0.0.4'
     agent_human_labels("Varnish") { "#{@name||"varnish"}[#{@vname||"default"}]"}
     agent_config_options :vname
+    agent_config_options :host
 
 #    metric_human_label { "Varnish[#{agent.instance_label}]: #{config[:description]}" }
 
@@ -141,7 +146,7 @@ module VarnishAgent
     end
 
     def poll_cycle
-      stats = VarnishAgent.varnishstat(@vname)
+      stats = VarnishAgent.varnishstat(@host,@vname)
       VarnishAgent.groups.each do |gname, group|
         group["metrics"].each do |metric|
           stat = stats[metric]
