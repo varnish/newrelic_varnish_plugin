@@ -22,5 +22,5 @@ tmp
 _yardoc
 doc/
 config/dev.yml
-
+.DS_Store
 
