@@ -17,5 +17,5 @@
 The plugin can be discussed in the [Google group][group].  Bugs can be
 reported on the [Github tracker][ghbugs] and pull requests are welcome.
 
-  [group]: "https://groups.google.com/a/varnish-software.com/forum/#!forum/newrelic"
-  [ghbugs]: "https://github.com/varnish/newrelic_varnish_plugin/issues"
+  [group]: https://groups.google.com/a/varnish-software.com/forum/#!forum/newrelic
+  [ghbugs]: https://github.com/varnish/newrelic_varnish_plugin/issues
