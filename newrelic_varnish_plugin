@@ -91,7 +91,7 @@ module VarnishAgent
     agent_guid "com.varnish-software.newrelic-stat"
     agent_version '0.0.5'
     agent_human_labels("Varnish") { "#{@name||"varnish"}[#{@vname||"default"}]"}
-    agent_config_options :vname
+    agent_config_options :name, :vname
 
 #    metric_human_label { "Varnish[#{agent.instance_label}]: #{config[:description]}" }
 
