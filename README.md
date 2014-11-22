@@ -1,4 +1,5 @@
-# New Relic Varnish Extension
+# Deprecated
+## New Relic Varnish Extension
 
 This runs on the Varnish server and reports the values from
 varnishstat back into New Relic.
