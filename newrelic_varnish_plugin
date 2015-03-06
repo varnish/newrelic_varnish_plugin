@@ -82,6 +82,28 @@ module VarnishAgent
     return @options
   end
 
+  def VarnishAgent.write_pid_file()
+    file_path = @options.pid_file
+    pid = Process.pid
+
+    begin
+      pid_file = File.open(file_path, 'w')
+      pid_file.write(pid)
+      pid_file.close()
+    rescue
+      unless File.writable?(file_path)
+        puts "Error: Could not write to pid file!\n"
+      end
+    end
+  end
+
+  def VarnishAgent.clear_pid_file()
+    file_path = @options.pid_file
+    if File.file?(file_path) && File.writable?(file_path)
+      File.delete(file_path)
+    end
+  end
+
   def VarnishAgent.groups()
     return {
       'Request rates' => {
@@ -231,9 +253,15 @@ module VarnishAgent
   options = VarnishAgent.parse_args(ARGV)
   NewRelic::Plugin::Config.config_file = options.config_file
   NewRelic::Plugin::Setup.install_agent :varnish,VarnishAgent
+  VarnishAgent.write_pid_file()
 
   #
   # Launch the agent (never returns)
   #
   NewRelic::Plugin::Run.setup_and_run
+
+  #
+  # If process are being shut down gracefully, clear pid file
+  #
+  VarnishAgent.clear_pid_file()
 end
