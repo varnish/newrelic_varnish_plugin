@@ -1,25 +1,16 @@
-# Deprecated
 ## New Relic Varnish Extension
+
+This is a fork of [the original](https://github.com/varnish/newrelic_varnish_plugin) which no longer seems to be maintained
 
 This runs on the Varnish server and reports the values from
 varnishstat back into New Relic.
 
 ## Instructions for running the Varnish extension agent
 
-1. Go to [the tags list](https://github.com/varnish/newrelic_varnish_plugin/tags) and find the latest tar.gz
-2. Download and extract the source
-3. run `bundle install` to install required gems
-4. Copy `config/template_newrelic_plugin.yml` to `config/newrelic_plugin.yml`
-5. Edit `config/newrelic_plugin.yml` and replace "YOUR_LICENSE_KEY_HERE" with your New Relic license key
-6. Edit the `config/newrelic_plugin.yml` if you are running Varnish
-   with an -n argument
-7. Execute `./newrelic_varnish_plugin`
-8. Go back to the Extensions list and after a brief period you will see an entry for your extension
-
-## Feedback, discussions and problems
-
-The plugin can be discussed in the [Google group][group].  Bugs can be
-reported on the [Github tracker][ghbugs] and pull requests are welcome.
-
-  [group]: https://groups.google.com/a/varnish-software.com/forum/#!forum/newrelic
-  [ghbugs]: https://github.com/varnish/newrelic_varnish_plugin/issues
+1. Check out the latest source from develop
+2. run `bundle install` to install required gems
+3. Copy `config/template_newrelic_plugin.yml` to path of your choise, ex `/etc/newrelic/newrelic_varnish_plugin.yml`
+4. Edit the `newrelic_plugin.yml` copy you just made and replace "YOUR_LICENSE_KEY_HERE" with your New Relic license key
+5. Edit the configuration further if you are running Varnish with an -n argument
+6. Execute `./newrelic_varnish_plugin -h` for usage instructions
+7. Go back to the Extensions list and after a brief period you will see an entry for your extension
