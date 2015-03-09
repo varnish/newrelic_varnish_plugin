@@ -89,6 +89,7 @@ module VarnishAgent
     begin
       pid_file = File.open(file_path, 'w')
       pid_file.write(pid)
+      pid_file.write("\n")
       pid_file.close()
     rescue
       unless File.writable?(file_path)
