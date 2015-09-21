@@ -33,11 +33,78 @@
 # SUCH DAMAGE.
 
 require 'rubygems'
+require 'optparse'
 require "bundler/setup"
 require 'rexml/document'
 require "newrelic_plugin"
 
 module VarnishAgent
+  @options = OpenStruct.new
+  @options.config_file = "config/newrelic_plugin.yml"
+  @options.pid_file = "newrelic_plugin.pid"
+
+  def VarnishAgent.parse_args(args)
+    opt_parser = OptionParser.new do |opts|
+      opts.banner = "Example usage: " \
+                    "./newrelic_varnish_plugin -c /etc/newrelic/newrelic_varnish.yml -p /var/run/newrelic_varnish.pid" \
+                    "\n\n" \
+                    "Usage options:\n"
+
+      opts.on("-c CONFIG_FILE",
+              "--config=CONFIG_FILE",
+              "Description: Config file, this must be readable by the user",
+              "Example: /etc/newrelic/newrelic_varnish_plugin.yml",
+              "Default: config/newrelic_plugin.yml\n\n") do |config|
+        @options.config_file = config
+      end
+
+      opts.on("-p PIDFILE",
+              "--pidfile=PIDFILE",
+              "Description: Pid file, this must be writable by the user",
+              "Example: /var/run/newrelic_varnish_plugin.pid",
+              "Default: newrelic_plugin.pid\n\n") do |pidfile|
+        @options.pid_file = pidfile
+      end
+
+      opts.on("-h", "--help", "Prints this help") do
+        puts opts
+        exit
+      end
+    end
+
+    begin
+      opt_parser.parse(args)
+    rescue OptionParser::MissingArgument
+      puts "Error: You must provide a value with this argument\n\n"
+      opt_parser.parse("-h")
+      exit
+    end
+    return @options
+  end
+
+  def VarnishAgent.write_pid_file()
+    file_path = @options.pid_file
+    pid = Process.pid
+
+    begin
+      pid_file = File.open(file_path, 'w')
+      pid_file.write(pid)
+      pid_file.write("\n")
+      pid_file.close()
+    rescue
+      unless File.writable?(file_path)
+        puts "Error: Could not write to pid file!\n"
+      end
+    end
+  end
+
+  def VarnishAgent.clear_pid_file()
+    file_path = @options.pid_file
+    if File.file?(file_path) && File.writable?(file_path)
+      File.delete(file_path)
+    end
+  end
+
   def VarnishAgent.groups()
     return {
       'Request rates' => {
@@ -184,10 +251,18 @@ module VarnishAgent
     end
   end
 
+  options = VarnishAgent.parse_args(ARGV)
+  NewRelic::Plugin::Config.config_file = options.config_file
   NewRelic::Plugin::Setup.install_agent :varnish,VarnishAgent
+  VarnishAgent.write_pid_file()
 
   #
   # Launch the agent (never returns)
   #
   NewRelic::Plugin::Run.setup_and_run
+
+  #
+  # If process are being shut down gracefully, clear pid file
+  #
+  VarnishAgent.clear_pid_file()
 end
